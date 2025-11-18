@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { TelegramService } from 'src/telegram/telegram.service';
 import { UpdateOrderDto } from './dto/update-order.dto';
@@ -61,15 +61,33 @@ ${order.OrderItem.map(
     });
   }
 
-  findOne(id: string) {
-    return `This action returns a #${id} order`;
+  async findOne(id: string) {
+    const check = await this.prisma.order.findFirst({ where: { id } });
+    if (!check) {
+      throw new NotFoundException('Topilmadi');
+    }
+
+    return check;
   }
 
-  update(id: string, updateOrderDto: UpdateOrderDto) {
-    return `This action updates a #${id} order`;
+  async update(id: string, updateOrderDto: UpdateOrderDto) {
+    const check = await this.prisma.order.update({
+      where: { id },
+      data: updateOrderDto,
+    });
+    if (!check) {
+      throw new NotFoundException('Topilmadi');
+    }
+
+    return check;
   }
 
-  remove(id: string) {
-    return `This action removes a #${id} order`;
+  async remove(id: string) {
+    const check = await this.prisma.order.delete({ where: { id } });
+    if (!check) {
+      throw new NotFoundException('Topilmadi');
+    }
+
+    return check;
   }
 }
