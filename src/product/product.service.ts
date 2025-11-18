@@ -16,10 +16,18 @@ export class ProductService {
       },
     });
   }
-
   async findAll(query: QueryDto) {
-    const { search, page = 1, limit = 10, categoryId } = query;
-    const skip = (page - 1) * limit;
+    const {
+      search,
+      page = 1,
+      limit = 10,
+      categoryId,
+      minPrice,
+      maxPrice,
+    } = query;
+    const pageNumber = Math.max(1, page);
+    const pageSize = Math.max(1, limit);
+    const skip = (pageNumber - 1) * pageSize;
 
     const where: Prisma.ProductWhereInput = {
       ...(search && {
@@ -30,13 +38,21 @@ export class ProductService {
         ],
       }),
       ...(categoryId && { categoryId }),
+      ...(minPrice || maxPrice
+        ? {
+            price: {
+              ...(minPrice ? { gte: minPrice } : {}),
+              ...(maxPrice ? { lte: maxPrice } : {}),
+            },
+          }
+        : {}),
     };
 
     const [items, total] = await Promise.all([
       this.prisma.product.findMany({
         where,
         skip,
-        take: limit,
+        take: pageSize,
         orderBy: { createdAt: 'desc' },
       }),
       this.prisma.product.count({ where }),
@@ -44,9 +60,9 @@ export class ProductService {
 
     return {
       total,
-      page,
-      limit,
-      pages: Math.ceil(total / limit),
+      page: pageNumber,
+      limit: pageSize,
+      pages: Math.ceil(total / pageSize),
       items,
     };
   }
